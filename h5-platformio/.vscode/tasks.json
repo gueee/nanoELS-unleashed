@@ -1,0 +1,138 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "PlatformIO",
+            "task": "Build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$platformio"
+            ],
+            "label": "PlatformIO: Build",
+            "detail": "platformio run"
+        },
+        {
+            "type": "PlatformIO",
+            "task": "Upload",
+            "group": "test",
+            "problemMatcher": [
+                "$platformio"
+            ],
+            "label": "PlatformIO: Upload",
+            "detail": "platformio run --target upload"
+        },
+        {
+            "type": "PlatformIO",
+            "task": "Upload and Monitor",
+            "group": "test",
+            "problemMatcher": [
+                "$platformio"
+            ],
+            "label": "PlatformIO: Upload and Monitor",
+            "detail": "platformio run --target upload --target monitor"
+        },
+        {
+            "type": "PlatformIO",
+            "task": "Monitor",
+            "group": "test",
+            "problemMatcher": [
+                "$platformio"
+            ],
+            "label": "PlatformIO: Monitor",
+            "detail": "platformio device monitor"
+        },
+        {
+            "type": "PlatformIO",
+            "task": "Clean",
+            "group": "build",
+            "problemMatcher": [
+                "$platformio"
+            ],
+            "label": "PlatformIO: Clean",
+            "detail": "platformio run --target clean"
+        },
+        {
+            "type": "PlatformIO",
+            "task": "Test",
+            "group": "test",
+            "problemMatcher": [
+                "$platformio"
+            ],
+            "label": "PlatformIO: Test",
+            "detail": "platformio test"
+        },
+        {
+            "type": "shell",
+            "label": "Build Release",
+            "command": "platformio",
+            "args": ["run", "-e", "nanoels_h5_release"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": ["$platformio"]
+        },
+        {
+            "type": "shell",
+            "label": "Build Debug",
+            "command": "platformio",
+            "args": ["run", "-e", "nanoels_h5_debug"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": ["$platformio"]
+        },
+        {
+            "type": "shell",
+            "label": "Upload Release",
+            "command": "platformio",
+            "args": ["run", "-e", "nanoels_h5_release", "--target", "upload"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": ["$platformio"]
+        },
+        {
+            "type": "shell",
+            "label": "Static Analysis",
+            "command": "platformio",
+            "args": ["check", "--verbose"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "Generate Compile Commands",
+            "command": "platformio",
+            "args": ["run", "--target", "compiledb"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

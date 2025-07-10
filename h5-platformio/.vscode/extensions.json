@@ -1,0 +1,19 @@
+{
+    "recommendations": [
+        "platformio.platformio-ide",
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "espressif.esp-idf-extension",
+        "webfreak.debug",
+        "ms-vscode.vscode-serial-monitor",
+        "aaron-bond.better-comments",
+        "gruntfuggly.todo-tree",
+        "ms-vscode.hexeditor",
+        "formulahendry.code-runner",
+        "redhat.vscode-yaml",
+        "ms-vscode.cmake-tools"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.vscode-arduino"
+    ]
+}

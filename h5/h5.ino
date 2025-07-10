@@ -1984,29 +1984,12 @@ void taskMoveZ(void *param) {
         }
       } while (left ? buttonLeftPressed : buttonRightPressed);
     } else {
-      z.speedMax = getStepMaxSpeed(&z);
-      int delta = 0;
-      do {
-        float fractionalDelta = (pulseDelta == 0 ? moveStep * sign / z.screwPitch : pulseDelta / PULSE_PER_REVOLUTION) * z.motorSteps + z.fractionalPos;
-        delta = round(fractionalDelta);
-        // Don't lose fractional steps when moving by 0.01" or 0.001".
-        z.fractionalPos = fractionalDelta - delta;
-        if (delta == 0) {
-          // When moveStep is e.g. 1 micron and MOTOR_STEPS_Z is 200, make delta non-zero.
-          delta = sign;
-        }
-
-        long posCopy = z.pos + z.pendingPos;
-        // Don't left-right move out of stops.
-        if (posCopy + delta > z.leftStop) {
-          delta = z.leftStop - posCopy;
-        } else if (posCopy + delta < z.rightStop) {
-          delta = z.rightStop - posCopy;
-        }
-        z.speedMax = getStepMaxSpeed(&z);
-        stepToContinuous(&z, posCopy + delta);
-        waitForStep(&z);
-      } while (delta != 0 && (left ? buttonLeftPressed : buttonRightPressed));
+      // Enhanced MPG velocity control for manual movement
+      if (pulseDelta != 0 || left || right) {
+        bool direction = (pulseDelta > 0 || right);
+        moveAxisWithMPGVelocity(&z, &zMpgTracker, pulseDelta, direction);
+      }
+      
       z.continuous = false;
       waitForPendingPos0(&z);
       if (isOn && mode == MODE_CONE) {
@@ -2047,28 +2030,12 @@ void taskMoveX(void *param) {
     x.speedMax = getStepMaxSpeed(&x);
     stepperEnable(&x, true);
 
-    int delta = 0;
-    int sign = up ? 1 : -1;
-    do {
-      float fractionalDelta = (pulseDelta == 0 ? moveStep * sign / x.screwPitch : pulseDelta / PULSE_PER_REVOLUTION) * x.motorSteps + x.fractionalPos;
-      delta = round(fractionalDelta);
-      // Don't lose fractional steps when moving by 0.01" or 0.001".
-      x.fractionalPos = fractionalDelta - delta;
-      if (delta == 0) {
-        // When moveStep is e.g. 1 micron and MOTOR_STEPS_Z is 200, make delta non-zero.
-        delta = sign;
-      }
-
-      long posCopy = x.pos + x.pendingPos;
-      if (posCopy + delta > x.leftStop) {
-        delta = x.leftStop - posCopy;
-      } else if (posCopy + delta < x.rightStop) {
-        delta = x.rightStop - posCopy;
-      }
-      stepToContinuous(&x, posCopy + delta);
-      waitForStep(&x);
-      pulseDelta = getAndResetPulses(&x);
-    } while (delta != 0 && (pulseDelta != 0 || (up ? buttonUpPressed : buttonDownPressed)));
+    // Enhanced MPG velocity control for X-axis
+    if (pulseDelta != 0 || up || down) {
+      bool direction = (pulseDelta > 0 || up);
+      moveAxisWithMPGVelocity(&x, &xMpgTracker, pulseDelta, direction);
+    }
+    
     x.continuous = false;
     waitForPendingPos0(&x);
     if (isOn && mode == MODE_CONE) {
@@ -3697,6 +3664,9 @@ void setup() {
   keyboard.begin(KEY_DATA, KEY_CLOCK);
   xTaskCreatePinnedToCore(taskKeypad, "taskKeypad", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
 
+  // Initialize MPG velocity trackers
+  initMPGVelocityTrackers();
+
   // Non-time-sensitive tasks on core 0.
   delay(1300); // Nextion needs time to boot or first display update will be ignored.
   xTaskCreatePinnedToCore(taskAttachInterrupts, "taskAttachInterrupts", 10000 /* stack size */, NULL, 0 /* priority */, NULL, 0 /* core */);
@@ -3739,4 +3709,105 @@ void loop() {
   moveAxis(&x);
   if (ACTIVE_Y) moveAxis(&y);
   xSemaphoreGive(motionMutex);
+}
+
+// Enhanced MPG velocity control parameters
+const float MPG_VELOCITY_SCALE = 0.5; // Scale factor for MPG velocity control
+const float MPG_ACCELERATION_SCALE = 2.0; // Acceleration scaling for MPG
+const int MPG_VELOCITY_SAMPLES = 10; // Number of samples to average for velocity calculation
+const unsigned long MPG_VELOCITY_TIMEOUT_MS = 100; // Timeout for velocity calculation
+
+// MPG velocity tracking structures
+struct MPGVelocityTracker {
+  unsigned long lastPulseTime[MPG_VELOCITY_SAMPLES];
+  int pulseCount[MPG_VELOCITY_SAMPLES];
+  int sampleIndex;
+  float currentVelocity;
+  float targetVelocity;
+  float acceleration;
+  bool isActive;
+};
+
+MPGVelocityTracker zMpgTracker;
+MPGVelocityTracker xMpgTracker;
+
+// Initialize MPG velocity trackers
+void initMPGVelocityTrackers() {
+  memset(&zMpgTracker, 0, sizeof(MPGVelocityTracker));
+  memset(&xMpgTracker, 0, sizeof(MPGVelocityTracker));
+}
+
+// Calculate MPG velocity based on pulse frequency
+float calculateMPGVelocity(MPGVelocityTracker* tracker, int pulseDelta) {
+  unsigned long currentTime = millis();
+  
+  if (pulseDelta != 0) {
+    tracker->lastPulseTime[tracker->sampleIndex] = currentTime;
+    tracker->pulseCount[tracker->sampleIndex] = pulseDelta;
+    tracker->sampleIndex = (tracker->sampleIndex + 1) % MPG_VELOCITY_SAMPLES;
+    tracker->isActive = true;
+  }
+  
+  // Calculate average velocity from recent samples
+  float totalVelocity = 0;
+  int validSamples = 0;
+  
+  for (int i = 0; i < MPG_VELOCITY_SAMPLES; i++) {
+    if (tracker->lastPulseTime[i] > 0 && 
+        (currentTime - tracker->lastPulseTime[i]) < MPG_VELOCITY_TIMEOUT_MS) {
+      float timeDiff = (currentTime - tracker->lastPulseTime[i]) / 1000.0f;
+      if (timeDiff > 0) {
+        totalVelocity += abs(tracker->pulseCount[i]) / timeDiff;
+        validSamples++;
+      }
+    }
+  }
+  
+  if (validSamples > 0) {
+    tracker->currentVelocity = totalVelocity / validSamples;
+  } else {
+    tracker->currentVelocity = 0;
+    tracker->isActive = false;
+  }
+  
+  return tracker->currentVelocity;
+}
+
+// Enhanced MPG movement with velocity control
+void moveAxisWithMPGVelocity(Axis* a, MPGVelocityTracker* tracker, int pulseDelta, bool direction) {
+  float velocity = calculateMPGVelocity(tracker, pulseDelta);
+  
+  // Scale velocity for more natural feel
+  float scaledVelocity = velocity * MPG_VELOCITY_SCALE;
+  
+  // Calculate movement based on velocity rather than just pulse count
+  float movement = 0;
+  if (pulseDelta != 0) {
+    // Direct pulse-based movement for immediate response
+    movement = pulseDelta / PULSE_PER_REVOLUTION * a->motorSteps;
+  } else if (tracker->isActive && scaledVelocity > 0.1) {
+    // Velocity-based movement for smooth control
+    movement = scaledVelocity * a->motorSteps / PULSE_PER_REVOLUTION;
+  }
+  
+  if (movement != 0) {
+    int delta = round(movement * (direction ? 1 : -1));
+    long posCopy = a->pos + a->pendingPos;
+    
+    // Apply limits
+    if (posCopy + delta > a->leftStop) {
+      delta = a->leftStop - posCopy;
+    } else if (posCopy + delta < a->rightStop) {
+      delta = a->rightStop - posCopy;
+    }
+    
+    if (delta != 0) {
+      // Adjust speed based on velocity for more responsive feel
+      float speedMultiplier = min(2.0f, 1.0f + scaledVelocity / 10.0f);
+      a->speedMax = min(a->speedManualMove * speedMultiplier, a->speedManualMove * 2);
+      
+      stepToContinuous(a, posCopy + delta);
+      waitForStep(a);
+    }
+  }
 }
