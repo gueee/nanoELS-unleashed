@@ -96,12 +96,8 @@ private:
     volatile unsigned long lastHash;
     volatile unsigned long updateCounter;
     
-    // Touch input processing
-    struct TouchEvent {
-        int x, y;                    // Touch coordinates
-        bool pressed;                 // Press state
-        unsigned long timestamp;      // Event timestamp
-    };
+    // Touch input processing - forward declaration
+    // (TouchEvent moved to public section)
     
     // Private methods
     void initializeSerial();
@@ -120,6 +116,12 @@ private:
     void updateOperationParams();
     void updateLimitsAndStops();
     void updateGCodeInfo();
+    
+    // Additional methods for compatibility
+    void initializeState();
+    void setText(const char* id, const char* text);
+    bool testCommunication();
+    void handleDisplayError(const char* error);
     
     // Touch input handling
     void processTouchInput();
@@ -175,6 +177,13 @@ public:
     bool sendCommand(const char* command, int parameter);
     bool sendCommand(const char* command, float parameter);
     bool readResponse(char* buffer, size_t bufferSize, unsigned long timeout = 1000);
+    
+    // Touch event structure (moved here for visibility)
+    struct TouchEvent {
+        int x, y;                    // Touch coordinates
+        bool pressed;                 // Press state
+        unsigned long timestamp;      // Event timestamp
+    };
     
     // Thread-safe operations
     bool lockDisplay(TickType_t timeout = portMAX_DELAY);

@@ -504,10 +504,10 @@ void loop() {
     vTaskDelay(pdMS_TO_TICKS(100));
 }
 
-// Load saved settings from preferences
+// Load saved settings from preferences  
 void loadSavedSettings() {
     Preferences pref;
-    pref.begin(CONFIG_NAMESPACE);
+    pref.begin(PREF_NAMESPACE);
     
     // Load system settings
     isOn = false;
@@ -553,7 +553,7 @@ void loadSavedSettings() {
 // Save settings to preferences
 void saveSettings() {
     Preferences pref;
-    pref.begin(CONFIG_NAMESPACE);
+    pref.begin(PREF_NAMESPACE);
     
     // Save system settings
     pref.putLong("dupr", dupr);
