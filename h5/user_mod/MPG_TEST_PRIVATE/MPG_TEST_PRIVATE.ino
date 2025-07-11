@@ -6,6 +6,7 @@
  */
 
 #include <Arduino.h>
+#include <driver/pcnt.h>
 
 // === Hardware-specific settings from Private/h5.ino ===
 #define ENCODER_PPR 600
@@ -35,6 +36,13 @@ const int TEST_PULSE_PIN = Z_PULSE_A; // Connect MPG encoder to this pin
 const int TEST_DIR_PIN = Z_DIR;       // Direction pin
 const int TEST_STEP_PIN = Z_STEP;     // Step pin
 const int TEST_ENA_PIN = Z_ENA;       // Enable pin
+
+#define PCNT_UNIT      PCNT_UNIT_1
+#define PCNT_PULSE_PIN Z_PULSE_A
+#define PCNT_CTRL_PIN  Z_PULSE_B
+#define PCNT_H_LIM     31000
+#define PCNT_L_LIM    -31000
+#define PCNT_FILTER    1
 
 // MPG velocity control parameters (same as in main code)
 const float MPG_VELOCITY_SCALE = 0.5;
@@ -78,7 +86,6 @@ void setup() {
   Serial1.print("t3.txt=\"\""); Serial1.write(0xFF); Serial1.write(0xFF); Serial1.write(0xFF);
 
   // Initialize pins
-  pinMode(TEST_PULSE_PIN, INPUT_PULLUP);
   pinMode(TEST_DIR_PIN, OUTPUT);
   pinMode(TEST_STEP_PIN, OUTPUT);
   pinMode(TEST_ENA_PIN, OUTPUT);
@@ -86,15 +93,34 @@ void setup() {
   // Initialize MPG tracker
   memset(&mpgTracker, 0, sizeof(MPGVelocityTracker));
   
-  // Attach interrupt for pulse counting
-  attachInterrupt(digitalPinToInterrupt(TEST_PULSE_PIN), pulseInterrupt, RISING);
-  
+  // Initialize PCNT for MPG input (quadrature)
+  pcnt_config_t pcntConfig = {};
+  pcntConfig.pulse_gpio_num = PCNT_PULSE_PIN;
+  pcntConfig.ctrl_gpio_num = PCNT_CTRL_PIN;
+  pcntConfig.channel = PCNT_CHANNEL_0;
+  pcntConfig.unit = PCNT_UNIT;
+  pcntConfig.pos_mode = PCNT_COUNT_INC;
+  pcntConfig.neg_mode = PCNT_COUNT_DEC;
+  pcntConfig.lctrl_mode = PCNT_MODE_REVERSE;
+  pcntConfig.hctrl_mode = PCNT_MODE_KEEP;
+  pcntConfig.counter_h_lim = PCNT_H_LIM;
+  pcntConfig.counter_l_lim = PCNT_L_LIM;
+  pcnt_unit_config(&pcntConfig);
+  pcnt_set_filter_value(PCNT_UNIT, PCNT_FILTER);
+  pcnt_filter_enable(PCNT_UNIT);
+  pcnt_counter_pause(PCNT_UNIT);
+  pcnt_counter_clear(PCNT_UNIT);
+  pcnt_counter_resume(PCNT_UNIT);
+
   Serial.println("Test program ready. Commands:");
   Serial.println("  'start' - Start velocity test");
   Serial.println("  'stop'  - Stop test");
   Serial.println("  'stats' - Show current statistics");
   Serial.println("  'reset' - Reset all counters");
 }
+
+int16_t lastPCNT = 0;
+unsigned long lastUpdate = 0;
 
 void loop() {
   // Handle serial commands
@@ -115,7 +141,7 @@ void loop() {
   
   // Update velocity calculation
   if (testRunning) {
-    updateVelocity();
+    updateVelocityPCNT();
     
     // Simulate motor movement based on velocity
     if (mpgTracker.currentVelocity > 0.1) {
@@ -126,44 +152,21 @@ void loop() {
   delay(10); // Small delay to prevent overwhelming the serial output
 }
 
-void pulseInterrupt() {
-  pulseCount++;
-  lastPulseTime = micros();
-}
-
-void startTest() {
-  Serial.println("Starting MPG velocity test...");
-  testRunning = true;
-  testStartTime = millis();
-  resetTest();
-}
-
-void stopTest() {
-  Serial.println("Stopping MPG velocity test...");
-  testRunning = false;
-  // Disable motor:
-  digitalWrite(TEST_ENA_PIN, INVERT_Z_ENABLE ? HIGH : LOW);
-}
-
-void resetTest() {
-  pulseCount = 0;
-  lastPulseTime = 0;
-  memset(&mpgTracker, 0, sizeof(MPGVelocityTracker));
-  Serial.println("Counters reset");
-}
-
-void updateVelocity() {
+void updateVelocityPCNT() {
   unsigned long currentTime = millis();
-  
-  // Simulate pulse input (in real system, this would come from encoder)
-  if (pulseCount > 0) {
+  int16_t count = 0;
+  pcnt_get_counter_value(PCNT_UNIT, &count);
+  int delta = count - lastPCNT;
+  lastPCNT = count;
+
+  // Store delta as a sample for velocity calculation
+  if (delta != 0) {
     mpgTracker.lastPulseTime[mpgTracker.sampleIndex] = currentTime;
-    mpgTracker.pulseCount[mpgTracker.sampleIndex] = pulseCount;
+    mpgTracker.pulseCount[mpgTracker.sampleIndex] = delta;
     mpgTracker.sampleIndex = (mpgTracker.sampleIndex + 1) % MPG_VELOCITY_SAMPLES;
     mpgTracker.isActive = true;
-    pulseCount = 0; // Reset for next reading
   }
-  
+
   // Calculate average velocity from recent samples
   float totalVelocity = 0;
   int validSamples = 0;
@@ -185,6 +188,36 @@ void updateVelocity() {
     mpgTracker.currentVelocity = 0;
     mpgTracker.isActive = false;
   }
+
+  // Display live stats on Nextion
+  defineStatsDisplay(delta);
+}
+
+void defineStatsDisplay(int delta) {
+  char buf[64];
+  snprintf(buf, sizeof(buf), "d=%d v=%.2f", delta, mpgTracker.currentVelocity);
+  Serial1.print("t2.txt=\""); Serial1.print(buf); Serial1.print("\""); Serial1.write(0xFF); Serial1.write(0xFF); Serial1.write(0xFF);
+}
+
+void startTest() {
+  Serial.println("Starting MPG velocity test...");
+  testRunning = true;
+  testStartTime = millis();
+  resetTest();
+}
+
+void stopTest() {
+  Serial.println("Stopping MPG velocity test...");
+  testRunning = false;
+  // Disable motor:
+  digitalWrite(TEST_ENA_PIN, INVERT_Z_ENABLE ? HIGH : LOW);
+}
+
+void resetTest() {
+  pulseCount = 0;
+  lastPulseTime = 0;
+  memset(&mpgTracker, 0, sizeof(MPGVelocityTracker));
+  Serial.println("Counters reset");
 }
 
 void simulateMotorMovement() {
