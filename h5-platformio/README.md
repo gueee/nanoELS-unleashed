@@ -1,257 +1,356 @@
-# nanoELS H5 - PlatformIO Edition
+# nanoELS H5 - Refactored PlatformIO Version
 
-**Electronic Lead Screw Controller for Metal Lathes**
+This is a complete refactoring of the nanoELS H5 Electronic Lead Screw controller, preserving all functionality from the original `h5.ino` while implementing a modern, modular architecture using PlatformIO.
 
-This is the enhanced PlatformIO version of the nanoELS H5 lathe controller, featuring a class-based architecture with safety-first design principles.
+## 🚀 Features
 
-## Overview
+### Core Functionality (Preserved from Original)
+- **Multi-axis Control**: X, Y, Z axis control with independent motion planning
+- **Enhanced MPG Support**: Velocity-based manual pulse generator control for natural feel
+- **G-code Interpretation**: Full G-code support with real-time execution
+- **Touch Screen Interface**: Nextion display with modern UI
+- **WiFi Connectivity**: Web interface and WebSocket communication
+- **PS2 Keyboard Support**: Full keyboard input for direct control
+- **Safety Systems**: Comprehensive safety monitoring and emergency stop
+- **File System**: G-code storage and management
+- **Preferences**: Persistent settings storage
 
-The nanoELS H5 is an ESP32-S3 based controller that provides precise electronic lead screw functionality for metal lathes. This PlatformIO version offers:
+### Enhanced Architecture
+- **Modular Design**: Class-based architecture with clear separation of concerns
+- **Real-time Tasks**: FreeRTOS task scheduling for optimal performance
+- **Thread Safety**: Mutex-protected operations for multi-threaded safety
+- **Configuration Management**: Centralized configuration with validation
+- **Error Handling**: Comprehensive error detection and recovery
+- **Diagnostics**: Built-in self-test and monitoring capabilities
 
-- **Class-based architecture** for better maintainability and testing
-- **Enhanced safety systems** with hardware emergency stops and watchdogs
-- **Professional development environment** with VSCode/Cursor support
-- **Comprehensive debugging** capabilities with real-time monitoring
-- **Modular design** for easy customization and expansion
-
-## Hardware Requirements
-
-### Core Components
-- **ESP32-S3 Development Board** (N16R8 recommended)
-- **SN74HCT245N Buffer ICs** (2x) for 5V signal level translation
-- **Nextion 5" Display** (NX8048P050 011C Y)
-- **PS2 Mini Keyboard** for input
-- **Custom PCB** (see `pcb/` directory in original project)
-
-### Mechanical Components
-- **600 PPR Optical Encoder** for spindle position
-- **NEMA 23 Stepper Motors** with appropriate drivers
-- **Lead screws** (4mm pitch recommended)
-- **Stepper drivers** (closed-loop recommended, e.g., STEPPERONLINE CL57T)
-
-### Safety Hardware
-- **Hardware Emergency Stop Button** (required for safe operation)
-- **Hardware Limit Switches** (highly recommended)
-- **Proper enclosure** with appropriate ventilation
-
-## Software Features
-
-### Motion Control
-- **3-axis control** (Z, X, Y) with precise positioning
-- **Multiple operation modes**: Threading, turning, facing, cones, G-code
-- **Real-time motion planning** with acceleration control
-- **Backlash compensation** and position tracking
-
-### Safety Systems
-- **Hardware emergency stop** with immediate response
-- **Software watchdog** and position monitoring
-- **Motion limits** and collision avoidance
-- **Fail-safe operation** with comprehensive error handling
-
-### User Interface
-- **Nextion touchscreen** with intuitive interface
-- **PS2 keyboard** for precise control
-- **WiFi web interface** for remote monitoring and G-code upload
-- **Real-time status** display and error reporting
-
-## Development Environment Setup
-
-### Prerequisites
-1. **VSCode or Cursor** IDE
-2. **PlatformIO extension** installed
-3. **Git** for version control
-
-### Installation
-```bash
-# Clone the repository
-git clone https://github.com/your-username/nanoELS-unleashed.git
-cd nanoELS-unleashed/h5-platformio
-
-# Open in VSCode/Cursor
-code .
-
-# Or open in Cursor
-cursor .
-```
-
-### First Build
-1. Open the project in VSCode/Cursor
-2. Install recommended extensions when prompted
-3. Wait for PlatformIO to initialize and download dependencies
-4. Use `Ctrl+Shift+P` → "PlatformIO: Build" to compile
-
-### Configuration
-Edit `include/config/hardware_config.h` to match your hardware setup:
-
-```cpp
-// Adjust these values for your specific hardware
-#define SPINDLE_ENCODER_PPR     1200    // Your encoder PPR
-#define DEFAULT_MOTOR_STEPS_Z   800     // Your motor steps per revolution
-#define DEFAULT_SCREW_PITCH_Z   40000   // Your lead screw pitch (deci-microns)
-```
-
-## Build Configurations
-
-### Development Build
-```bash
-pio run -e nanoels_h5
-```
-
-### Debug Build (with extensive logging)
-```bash
-pio run -e nanoels_h5_debug
-```
-
-### Release Build (optimized for production)
-```bash
-pio run -e nanoels_h5_release
-```
-
-## Safety Considerations
-
-⚠️ **IMPORTANT SAFETY WARNING** ⚠️
-
-This controller operates dangerous machinery. Always follow these safety guidelines:
-
-### Essential Safety Measures
-1. **Install hardware emergency stop** button accessible from all operating positions
-2. **Test emergency stop** functionality before each use
-3. **Install limit switches** on all axes to prevent crashes
-4. **Use proper enclosure** to protect electronics from chips and coolant
-5. **Verify all connections** before powering on
-6. **Start with low speeds** and test all functions
-7. **Never leave machine unattended** during operation
-
-### Safety Features
-- Hardware emergency stop with immediate motion halt
-- Position limits and soft stops
-- Watchdog timer for system reliability
-- Error detection and automatic shutdown
-- Fail-safe defaults and validation
-
-## Usage
-
-### Basic Operation
-1. **Power on** the system and wait for initialization
-2. **Home all axes** using the appropriate procedure
-3. **Set work coordinates** and material dimensions
-4. **Choose operation mode** (turning, threading, etc.)
-5. **Set parameters** (speed, feed, depth of cut)
-6. **Test with air cuts** before actual machining
-
-### Operation Modes
-- **F1 - Gearbox**: Basic electronic gearing
-- **F2 - Turning**: Automated turning passes
-- **F3 - Facing**: Face turning operations
-- **F4 - Cone**: Tapered turning
-- **F5 - Parting**: Cut-off operations
-- **F6 - Threading**: Internal and external threads
-- **F7 - Async**: Time-based movements
-- **F8 - Ellipse**: Elliptical turning
-- **F9 - G-code**: CNC program execution
-
-### Keyboard Controls
-- **Arrow keys**: Manual axis movement
-- **+/-**: Adjust feed/speed
-- **Enter**: Start operation
-- **ESC**: Emergency stop
-- **F1-F10**: Select operation modes
-- **Numbers**: Parameter entry
-
-## Debugging and Development
-
-### Serial Monitor
-```bash
-pio device monitor
-```
-
-### Debug with Hardware Debugger
-1. Connect ESP-PROG or similar debugger
-2. Use `F5` to start debugging session
-3. Set breakpoints and inspect variables
-
-### Static Analysis
-```bash
-pio check --verbose
-```
-
-### Unit Testing
-```bash
-pio test
-```
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 h5-platformio/
 ├── include/
-│   ├── config/           # Configuration headers
-│   ├── core/            # Core system classes
-│   ├── ui/              # User interface components
-│   └── comm/            # Communication protocols
+│   ├── config/
+│   │   ├── hardware_config.h      # Hardware pin definitions and constants
+│   │   └── safety_config.h        # Safety system configuration
+│   ├── core/
+│   │   ├── axis_controller.h      # Individual axis control
+│   │   ├── safety_system.h        # Safety monitoring and emergency stop
+│   │   ├── spindle_encoder.h      # Spindle encoder handling
+│   │   └── motion_planner.h       # Multi-axis motion planning
+│   ├── ui/
+│   │   └── display_manager.h      # Nextion display interface
+│   └── comm/
+│       └── communication_manager.h # WiFi, WebSocket, PS2 keyboard
 ├── src/
-│   ├── main.cpp         # Main application
-│   ├── core/            # Core system implementations
-│   ├── ui/              # UI implementations
-│   └── comm/            # Communication implementations
-├── lib/                 # Local libraries
-├── test/                # Unit tests
-├── .vscode/             # VSCode configuration
-└── platformio.ini       # PlatformIO configuration
+│   └── main.cpp                   # Main application entry point
+├── platformio.ini                 # PlatformIO configuration
+└── README.md                      # This file
 ```
 
-## Contributing
+## 🔧 Hardware Requirements
 
-1. **Fork** the repository
-2. **Create feature branch**: `git checkout -b feature/amazing-feature`
-3. **Follow coding standards** (see `.vscode/settings.json`)
-4. **Add tests** for new functionality
-5. **Test thoroughly** with hardware
-6. **Submit pull request** with detailed description
+### ESP32-S3 Development Board
+- **Processor**: ESP32-S3 dual-core 240MHz
+- **Memory**: 8MB PSRAM, 16MB Flash
+- **Connectivity**: WiFi, Bluetooth, USB-C
 
-## Troubleshooting
+### Motor Control
+- **Stepper Motors**: NEMA 23 or NEMA 17 with closed-loop drivers
+- **Power Supply**: 48V for maximum performance
+- **Drivers**: Recommended STEPPERONLINE CL57T or similar
+
+### Encoder System
+- **Spindle Encoder**: 1200 PPR optical rotary encoder
+- **Mounting**: 3D-printed encoder mount and gear
+- **Connection**: Quadrature encoder signals
+
+### Display and Input
+- **Touch Screen**: Nextion display (recommended 7" or larger)
+- **Keyboard**: PS2 keyboard for direct input
+- **Interface**: SN74HCT245N level shifters for signal buffering
+
+## 🛠️ Installation and Setup
+
+### Prerequisites
+- **PlatformIO**: Install PlatformIO IDE or CLI
+- **Arduino Framework**: ESP32 Arduino framework
+- **Libraries**: Required libraries are automatically managed by PlatformIO
+
+### Building the Project
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd nanoELS-unleashed/h5-platformio
+   ```
+
+2. **Configure hardware settings**:
+   Edit `include/config/hardware_config.h` to match your hardware:
+   ```cpp
+   // WiFi settings
+   #define SSID "your-wifi-name"
+   #define PASSWORD "your-password"
+   
+   // Pin assignments
+   #define ENC_A 13
+   #define ENC_B 14
+   // ... other pins
+   ```
+
+3. **Build the project**:
+   ```bash
+   pio run
+   ```
+
+4. **Upload to ESP32-S3**:
+   ```bash
+   pio run --target upload
+   ```
+
+5. **Monitor serial output**:
+   ```bash
+   pio device monitor
+   ```
+
+## 🔌 Pin Configuration
+
+### Essential Pins (Required)
+```cpp
+// Spindle Encoder
+#define ENC_A 13
+#define ENC_B 14
+
+// Z Axis (Main Lead Screw)
+#define Z_ENA 41
+#define Z_DIR 42
+#define Z_STEP 35
+#define Z_PULSE_A 18  // MPG
+#define Z_PULSE_B 8   // MPG
+
+// X Axis (Cross Slide)
+#define X_ENA 16
+#define X_DIR 15
+#define X_STEP 7
+#define X_PULSE_A 47  // MPG
+#define X_PULSE_B 21  // MPG
+
+// PS2 Keyboard
+#define KEY_DATA 37
+#define KEY_CLOCK 36
+```
+
+### Optional Pins
+```cpp
+// Y Axis (Optional 4th Axis)
+#define Y_ENA 1
+#define Y_DIR 2
+#define Y_STEP 17
+#define Y_PULSE_A 45  // MPG
+#define Y_PULSE_B 48  // MPG
+```
+
+## 🎛️ Operation Modes
+
+### Normal Mode (Gearbox)
+- Synchronized motion with spindle
+- Automatic pitch control
+- Real-time position tracking
+
+### Turn Mode
+- Automatic turning operations
+- Multi-pass support
+- Depth control
+
+### Face Mode
+- Automatic facing operations
+- Step-over control
+- Surface finish optimization
+
+### Thread Mode
+- Multi-start threading
+- Thread chasing
+- Pitch verification
+
+### G-code Mode
+- Full G-code interpretation
+- File-based programs
+- Real-time execution
+
+### Cone Mode
+- Automatic cone turning
+- Ratio control
+- Precision cutting
+
+## 🌐 Web Interface
+
+The system provides a comprehensive web interface accessible via WiFi:
+
+### Features
+- **Real-time Status**: Live position, speed, and status updates
+- **G-code Management**: Upload, download, and manage G-code files
+- **Manual Control**: Direct axis control and parameter adjustment
+- **Settings**: Configuration and calibration options
+- **Monitoring**: Real-time graphs and diagnostics
+
+### Access
+1. Connect to the nanoELS WiFi network
+2. Open web browser to `http://nanoels-h5.local` or `192.168.4.1`
+3. Use the web interface for control and monitoring
+
+## 🔒 Safety Features
+
+### Emergency Stop System
+- **Hardware E-stop**: Immediate stop capability
+- **Software E-stop**: Programmatic emergency stop
+- **Watchdog Timer**: System health monitoring
+- **Fault Detection**: Comprehensive error detection
+
+### Motion Safety
+- **Soft Limits**: Programmable travel limits
+- **Hard Limits**: Hardware limit switch support
+- **Speed Limits**: Maximum speed enforcement
+- **Acceleration Limits**: Safe acceleration curves
+
+### System Monitoring
+- **Temperature Monitoring**: Component temperature tracking
+- **Power Monitoring**: Voltage and current monitoring
+- **Communication Health**: Network and device connectivity
+- **Encoder Health**: Spindle encoder signal monitoring
+
+## 📊 Enhanced MPG Control
+
+The refactored version includes enhanced Manual Pulse Generator (MPG) control:
+
+### Velocity-Based Movement
+- **Natural Feel**: MPG responds to rotation speed, not just pulse count
+- **Adaptive Acceleration**: Faster rotation = faster movement
+- **Smooth Transitions**: Velocity averaging prevents jerky movement
+- **Responsive Control**: Immediate response to user input
+
+### Configuration
+```cpp
+// MPG velocity control parameters
+const float MPG_VELOCITY_SCALE = 0.5;        // Scale factor
+const float MPG_ACCELERATION_SCALE = 2.0;    // Acceleration scaling
+const int MPG_VELOCITY_SAMPLES = 10;         // Velocity averaging samples
+const unsigned long MPG_VELOCITY_TIMEOUT_MS = 100; // Timeout for velocity calculation
+```
+
+## 🔧 Configuration
+
+### Hardware Configuration
+Edit `include/config/hardware_config.h` for your specific hardware:
+
+```cpp
+// Lead screw configuration
+#define SCREW_Z_DU 40000    // 4mm lead screw
+#define MOTOR_STEPS_Z 800   // Motor steps per revolution
+
+// Speed and acceleration
+#define SPEED_START_Z MOTOR_STEPS_Z
+#define ACCELERATION_Z 25 * MOTOR_STEPS_Z
+
+// Direction inversion
+#define INVERT_Z false      // Invert if needed
+#define INVERT_X true       // Invert if needed
+```
+
+### Safety Configuration
+Edit `include/config/safety_config.h` for safety limits:
+
+```cpp
+// Speed limits
+#define SAFETY_MAX_SPEED_Z 10000
+#define SAFETY_MAX_SPEED_X 10000
+
+// Temperature limits
+#define SAFETY_MAX_TEMPERATURE_MOTOR 80
+#define SAFETY_MAX_TEMPERATURE_DRIVER 70
+```
+
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-**Build Errors**
-- Ensure PlatformIO is up to date
-- Check library dependencies in `platformio.ini`
-- Verify ESP32 platform is installed
+1. **Build Errors**:
+   - Ensure PlatformIO is properly installed
+   - Check that all required libraries are available
+   - Verify ESP32-S3 board support is installed
 
-**Upload Failures**
-- Check USB cable and driver
-- Verify correct COM port
-- Try holding BOOT button during upload
+2. **Upload Issues**:
+   - Check USB connection and drivers
+   - Verify correct COM port selection
+   - Try different upload speeds
 
-**Runtime Issues**
-- Check serial monitor for error messages
-- Verify hardware connections
-- Test with minimal configuration
+3. **Hardware Issues**:
+   - Verify pin connections
+   - Check power supply voltage
+   - Test encoder signals
 
-### Debug Tips
-- Use debug build for verbose logging
-- Monitor system state via web interface
-- Check safety system status first
-- Verify encoder signals and motor responses
+4. **WiFi Issues**:
+   - Check SSID and password configuration
+   - Verify WiFi credentials
+   - Check for network conflicts
 
-## License
+### Debug Features
 
-This project is based on the original nanoELS by Maxim Kachurovskiy. Please see the main repository for licensing information.
+The system includes comprehensive debugging:
 
-## Acknowledgments
+```cpp
+// Enable debug output
+#define DEBUG_ESP_PORT Serial
+#define DEBUG_ESP_CORE
+#define DEBUG_ESP_WIFI
+```
 
-- **Maxim Kachurovskiy** - Original nanoELS creator
-- **ESP32 Community** - Excellent platform and tools
-- **PlatformIO Team** - Outstanding development environment
+### Serial Monitor Commands
 
-## Support
+```bash
+# Monitor with exception decoder
+pio device monitor --filters esp32_exception_decoder
 
-For questions and support:
-1. Check the [troubleshooting section](#troubleshooting)
-2. Review existing [GitHub issues](https://github.com/your-username/nanoELS-unleashed/issues)
-3. Create a new issue with detailed description and hardware setup
-4. Join the community discussions
+# Monitor with timestamps
+pio device monitor --filters time
+```
+
+## 📈 Performance
+
+### Real-time Performance
+- **Motion Control**: 1ms cycle time on Core 1
+- **Safety Monitoring**: 10ms cycle time on Core 0
+- **Display Updates**: 50ms cycle time (20Hz)
+- **Communication**: 20ms cycle time
+
+### Memory Usage
+- **Stack Sizes**: Optimized for ESP32-S3 memory
+- **Heap Management**: Efficient memory allocation
+- **PSRAM Usage**: Leverages external PSRAM for buffers
+
+## 🤝 Contributing
+
+### Development Guidelines
+1. **Preserve Functionality**: All original features must be maintained
+2. **Safety First**: Safety systems are highest priority
+3. **Modular Design**: Keep components loosely coupled
+4. **Thread Safety**: Use proper synchronization
+5. **Error Handling**: Comprehensive error detection and recovery
+
+### Code Style
+- **C++ Standards**: Use modern C++ features
+- **Naming**: Clear, descriptive names
+- **Documentation**: Comprehensive comments
+- **Testing**: Include self-test capabilities
+
+## 📄 License
+
+This project is based on the original nanoELS by Maxim Kachurovskiy. All original work and intellectual property belongs to Maxim. This refactored version maintains full compatibility while adding modern development practices.
+
+## 🙏 Acknowledgments
+
+- **Maxim Kachurovskiy**: Original nanoELS creator
+- **ESP32 Community**: Hardware and library support
+- **PlatformIO Team**: Development environment
+- **Open Source Contributors**: Libraries and tools
 
 ---
 
-**Remember: Safety first! Always test thoroughly and use appropriate safety measures when working with machine tools.**
+**⚠️ SAFETY WARNING**: This controls dangerous machinery. Always implement proper emergency stops and safety measures before operating. Use at your own risk.
