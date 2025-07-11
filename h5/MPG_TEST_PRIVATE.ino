@@ -1,32 +1,46 @@
 /*
- * MPG Velocity Control Test Program
- * 
- * This program tests the enhanced MPG velocity control functionality
- * for the nanoELS H5 system.
- * 
- * Features tested:
- * - Velocity calculation from pulse frequency
- * - Adaptive speed control based on encoder rotation speed
- * - Smooth acceleration/deceleration
- * - Natural feel simulation
+ * MPG Velocity Control Test Program (PRIVATE HARDWARE VERSION)
+ *
+ * This is a customized copy of MPG_TEST.ino for the user's specific hardware setup.
+ * All pin assignments, PPR, and key mappings are taken from Private/h5.ino.
  */
 
 #include <Arduino.h>
+
+// === Hardware-specific settings from Private/h5.ino ===
+#define ENCODER_PPR 600
+#define PULSE_PER_REVOLUTION 600
+#define ENC_A 13
+#define ENC_B 14
+#define Z_ENA 41
+#define Z_DIR 42
+#define Z_STEP 35
+#define Z_PULSE_A 18
+#define Z_PULSE_B 8
+#define X_ENA 16
+#define X_DIR 15
+#define X_STEP 7
+#define X_PULSE_A 47
+#define X_PULSE_B 21
+#define KEY_DATA 37
+#define KEY_CLOCK 36
+// ... (add more as needed)
+
+#define INVERT_Z_ENABLE true
+#define INVERT_X_ENABLE true
+
+// If you want to test Z axis, use Z_* pins. For X axis, use X_* pins.
+// For this test, we're using Z axis pins and INVERT_Z_ENABLE
+const int TEST_PULSE_PIN = Z_PULSE_A; // Connect MPG encoder to this pin
+const int TEST_DIR_PIN = Z_DIR;       // Direction pin
+const int TEST_STEP_PIN = Z_STEP;     // Step pin
+const int TEST_ENA_PIN = Z_ENA;       // Enable pin
 
 // MPG velocity control parameters (same as in main code)
 const float MPG_VELOCITY_SCALE = 0.5;
 const float MPG_ACCELERATION_SCALE = 2.0;
 const int MPG_VELOCITY_SAMPLES = 10;
 const unsigned long MPG_VELOCITY_TIMEOUT_MS = 100;
-
-// Test parameters
-const int TEST_PULSE_PIN = 2; // Connect MPG encoder to this pin
-const int TEST_DIR_PIN = 3;   // Direction pin
-const int TEST_STEP_PIN = 4;  // Step pin
-const int TEST_ENA_PIN = 5;   // Enable pin
-
-#define INVERT_Z_ENABLE false
-#define INVERT_X_ENABLE false
 
 // MPG velocity tracking structure
 struct MPGVelocityTracker {
@@ -52,7 +66,7 @@ unsigned long testStartTime = 0;
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("MPG Velocity Control Test Program");
+  Serial.println("MPG Velocity Control Test Program (PRIVATE HARDWARE)");
   Serial.println("=================================");
 
   // Nextion display boot fix
@@ -235,74 +249,4 @@ void showStats() {
     }
   }
   Serial.println("==================================");
-}
-
-// Test scenarios
-void runTestScenario(const char* scenario, int pulseRate, int duration) {
-  Serial.print("Running scenario: ");
-  Serial.println(scenario);
-  Serial.print("Pulse rate: ");
-  Serial.print(pulseRate);
-  Serial.println(" Hz");
-  Serial.print("Duration: ");
-  Serial.print(duration);
-  Serial.println(" ms");
-  
-  startTest();
-  
-  // Simulate pulses at specified rate
-  unsigned long startTime = millis();
-  unsigned long lastPulse = 0;
-  unsigned long pulseInterval = 1000 / pulseRate; // Convert Hz to ms
-  
-  while (millis() - startTime < duration) {
-    if (millis() - lastPulse >= pulseInterval) {
-      pulseCount++;
-      lastPulseTime = micros();
-      lastPulse = millis();
-    }
-    
-    updateVelocity();
-    simulateMotorMovement();
-    delay(1);
-  }
-  
-  stopTest();
-  showStats();
-  Serial.println("Scenario completed.\n");
-}
-
-void runAllTestScenarios() {
-  Serial.println("Running all test scenarios...\n");
-  
-  // Test 1: Slow rotation
-  runTestScenario("Slow Rotation", 10, 5000);
-  delay(1000);
-  
-  // Test 2: Medium rotation
-  runTestScenario("Medium Rotation", 50, 5000);
-  delay(1000);
-  
-  // Test 3: Fast rotation
-  runTestScenario("Fast Rotation", 100, 5000);
-  delay(1000);
-  
-  // Test 4: Variable speed
-  Serial.println("Running variable speed test...");
-  startTest();
-  for (int i = 0; i < 10000; i++) {
-    int pulseRate = 10 + (i / 100) * 2; // Gradually increase speed
-    if (i % 100 == 0) {
-      pulseCount++;
-      lastPulseTime = micros();
-    }
-    
-    updateVelocity();
-    simulateMotorMovement();
-    delay(1);
-  }
-  stopTest();
-  showStats();
-  
-  Serial.println("All test scenarios completed!");
 } 
